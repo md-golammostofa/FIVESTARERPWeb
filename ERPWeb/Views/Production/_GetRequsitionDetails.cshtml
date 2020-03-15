@@ -1,0 +1,48 @@
+﻿@model IEnumerable<ERPBO.Production.ViewModels.RequsitionDetailViewModel>
+@{
+    int sl = 0;
+    Layout = null;
+}
+
+<table class="table table-bordered table-striped table-sm table-responsive-lg">
+    <thead class="thead-dark">
+        <tr class="text-center">
+            <th>SL No.</th>
+            <th class="hide"></th>
+            <th class="hide"></th>
+            <th>ItemTypeName</th>
+            <th class="hide"></th>
+            <th>ItemName</th>
+            <th>Qty.</th>
+            <th>Unit</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var d in Model)
+        {
+            sl = sl + 1;
+            <tr>
+                <td class="text-center" width="10%">@sl</td>
+                <td class="hide">@d.ReqDetailId</td>
+                <td class="hide">@d.ItemTypeId</td>
+                <td>@d.ItemTypeName</td>
+                <td class="hide">@d.ItemId</td>
+                <td>@d.ItemName</td>
+                <td class="text-center">@d.Quantity</td>
+                <td class="text-center">@d.UnitName</td>
+            </tr>
+        }
+    </tbody>
+</table>
+@if ((string)ViewBag.RequisitionStatus == "Approved")
+{
+    <div class="modal-footer">
+        <button class="btn btn-sm btn-success btnAccept">Accept</button>
+    </div>
+}
+@if ((string)ViewBag.RequisitionStatus == "Recheck")
+{
+    <div class="modal-footer">
+        <button class="btn btn-sm btn-success btnRecheck">Check Done</button>
+    </div>
+}

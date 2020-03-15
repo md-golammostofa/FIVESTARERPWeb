@@ -1,0 +1,287 @@
+﻿
+@{
+    ViewBag.Title = "Create Requsition";
+    int sl = 0;
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="row">
+            <div class="col-md-4">
+                <a href="/Production/GetReqInfoList" class="btn btn-sm btn-primary" title="Back To List"><i class="fas fa-arrow-left"></i></a>
+            </div>
+            <div class="col-md-4">
+                <h4 style="color:darkblue"><b>Create New Requsition</b></h4>
+            </div>
+            <div class="col-md-4"></div>
+        </div>
+        <hr />
+    </div>
+    <div class="col-md-12">
+        <form id="frmReqDetails">
+            @Html.AntiForgeryToken()
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="ddlLineNumber" class="control-label font-weight-bold">Production Line Number</label>
+                    @Html.DropDownList("ddlLineNumber", (IEnumerable<SelectListItem>)ViewBag.ddlLineNumber, "--Select Line Number--", new { @class = "form-control form-control-sm" })
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlWarehouse" class="control-label font-weight-bold">Warehouse Name</label>
+                    @Html.DropDownList("ddlWarehouse", (IEnumerable<SelectListItem>)ViewBag.ddlWarehouse, "--Select Warehouse--", new { @class = "form-control form-control-sm" })
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlItemType" class="control-label font-weight-bold">Item Type Name</label>
+                    <select id="ddlItemType" class="form-control form-control-sm">
+                        <option value="">--Select Item Type--</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ddlItem" class="control-label font-weight-bold">Item Name</label>
+                    <select id="ddlItem" class="form-control form-control-sm">
+                        <option value="">--Select Item--</option>
+                    </select>
+                    <span class="error hide duplicate-itemName font-weight-bold">The Item is already exist!</span>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <label for="txtQuantity" class="control-label font-weight-bold">Quantity</label>
+                    <div class="input-group col-md-8">
+                        <input type="number" name="quantity" id="txtQuantity" class="form-control form-control-sm" />
+                        <span class="error hide require-quantity font-weight-bold">Quantity is required</span>
+                        <span id="unitName" class="font-weight-bold mt-2" style="color:darkblue"> </span>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group col-md-12">
+                        <label for="txtRemarks" class="control-label font-weight-bold">Remarks</label>
+                        <input type="text" name="remarks" value="" id="txtRemarks" class="form-control form-control-sm" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label for="" class="control-label font-weight-bold" style="visibility:hidden">Add To List</label>
+                    <div class="clearfix">
+                        <button type="submit" class="btn btn-sm btn-success float-left" id="btnAddToList" title="Add To List"><i class="fas fa-save"></i> ADD TO LIST </button> &nbsp;
+                        <button class="btn btn-danger btn-sm float-right" id="btnReset"> RESET <i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+            </div>
+            <hr />
+            <div class="col-md-12">
+                <div class="row">
+                    <div class="col-md-4 mb-1">
+                        <input type="text" name="search" id="searchBy" class="form-control form-control-sm" placeholder="Search By Anything" onkeyup="tableFilter('#tblRequsitionDetailsData tbody tr',this)" />
+                    </div>
+                    <div class="col-md-4"></div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary btn-sm float-lg-right" style="background-color:darkblue" id="btnSubmit">SAVE <i class="fas fa-paper-plane"></i></button>                        
+                    </div>
+                </div>
+                <table class="table table-bordered table-sm table-striped table-responsive-lg" id="tblRequsitionDetailsData">
+                    <thead class="btn-dark">
+                        <tr class="text-center">
+                            <th>SL No.</th>
+                            @*<th class="hide"></th>
+                                <th>Production Line</th>*@
+                            <th class="hide"></th>
+                            <th>ItemTypeName</th>
+                            <th class="hide"></th>
+                            <th>ItemName</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Remarks</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section scripts{
+    <script type="text/javascript">
+        var hdfReqDetailsId = $("#hdfReqDetailsId");
+        var ddlWarehouse = $("#ddlWarehouse");
+        var ddlLineNumber = $("#ddlLineNumber");
+        var ddlItemType = $("#ddlItemType");
+        var ddlItem = $("#ddlItem");
+        var unitName = $("#unitName");
+        var txtRemarks = $("#txtRemarks");
+        var txtQuantity = $("#txtQuantity");
+
+        ddlLineNumber.change(function () {
+            disable("#ddlLineNumber")
+        })
+
+        //casced dropdown load for itemtype
+        ddlWarehouse.change(function () {
+            $("#unitName").text('');
+            disable("#ddlWarehouse")
+            clearDropdown("ddlItemType");
+            clearDropdown("ddlItem");
+            if (ddlWarehouse.val() != "") {
+                LoadDropDown('/Common/GetItemTypeForDDL', 'POST', ddlItemType, JSON.stringify({ warehouseId: ddlWarehouse.val() }));
+            }
+        })
+
+        //casced dropdown load for item
+        ddlItemType.change(function () {
+            $("#unitName").text('');
+            clearDropdown("ddlItem");
+            if (ddlItemType.val() != "") {
+                LoadDropDown('/Common/GetItemForDDL', 'POST', ddlItem, JSON.stringify({ itemTypeId: ddlItemType.val() }));
+            }
+        })
+
+        //unit text
+        ddlItem.change(function () {
+            $("#unitName").text('');
+            if (ddlItem.val() != "") {
+                $.when(postReqWithToken(dataType.applicationJson, dataType.json, 'POST', '/Common/GetUnitByItemId', JSON.stringify({ itemId: ddlItem.val() }), getToken())).then(function (res, status) {
+                    console.log(res);
+                    console.log(status);
+                    if (status == "success") {
+                        $("#unitName").text(res.UnitSymbol);
+                    }
+                }).fail(function (error) {
+                    consoleLog(error);
+                })
+            }
+        })
+
+        //click addlist button and save data in list
+        $("#btnAddToList").click(function (e) {
+            e.preventDefault();
+            if (validateTable() == true) {
+                var sl = $("#tblRequsitionDetailsData tbody tr").length;
+                var td1 = "<td class='text-center'>" + (sl + 1) + "</td>"
+                var td2 = "<td class='hide'>" + ddlItemType.val() + "</td>";
+                var td3 = "<td>" + $("#ddlItemType option:selected").text() + "</td>";
+
+                var td4 = "<td class='hide'>" + ddlItem.val() + "</td>";
+                var td5 = "<td>" + $("#ddlItem option:selected").text() + "</td>";
+
+                var td6 = "<td class='text-center'>" + txtQuantity.val() + "</td>";
+                var td7 = "<td class='text-center'>" + unitName.text() + "</td>";
+                var td8 = "<td>" + txtRemarks.val() + "</td>";
+                var td9 = "<td class='text-center'><a href='#' class='btn btn-icon btn-sm btn-warning data-onfly-edit'><i class='far fa-edit'></i> Edit</a> <a href='#' class='btn btn-sm btn-danger data-onfly-del'><i class='far fa-trash-alt'></i> Delete</a></td>";
+
+                var tr = "<tr>" + td1 + td2 + td3 + td4 + td5 + td6 + td7 + td8 + td9 + "</tr>";
+                $("#tblRequsitionDetailsData tbody").append(tr);
+                clearCtrl();
+            }
+        });
+
+        $("#btnReset").click(function (e) {
+            clearDropdown("ddlItem");
+            enable("#ddlWarehouse");
+            enable("#ddlLineNumber");
+            $("#tblRequsitionDetailsData tbody").empty();
+            ddlItemType.val('');
+            e.preventDefault();
+            txtQuantity.val('');
+            unitName.text('');
+            txtRemarks.val('');
+        })
+
+        function clearCtrl() {
+            ddlItemType.val('');
+            ddlItem.val('');
+            txtQuantity.val('');
+            unitName.text('');
+            txtRemarks.val('');
+        }
+
+        function fnGetDdlSelectedText(id) {
+            $("#" + id + " option:selected").text();
+        }
+
+        //data delete add list
+        $(document).on("click", "a.data-onfly-del", function (e) {
+            e.preventDefault();
+            var index = $(this).parent().parents('tbody tr').index();
+            removeTableRow("#tblRequsitionDetailsData tbody", index);
+            fnFixTheTbodyRowSerial("#tblRequsitionDetailsData", index);
+
+            $("#tblRequsitionDetailsData tbody tr").removeClass("btn-success");
+        })
+        
+        function validateTable() {
+            $('.error').addClass('hide');
+            var isValid = true;
+            var count = $("#tblRequsitionDetailsData tbody tr").length;
+            if (count > 0) {
+                $.each($("#tblRequsitionDetailsData tbody tr"), function (index, item) {
+                    var itemId = $(this).children('td').eq(3).html();
+                    if (itemId == ddlItem.val()) {
+                        isValid = false;
+                        $(".duplicate-itemName").removeClass('hide');
+                    }
+                })
+            }
+            if (txtQuantity.val() == "")
+            {
+                isValid = false;
+                $(".require-quantity").removeClass("hide");
+            }
+            return isValid;
+        }
+
+        $("#btnSubmit").click(function (e) {
+            e.preventDefault();
+            $(".error").addClass("hide");
+            var reqDetails = [];
+            reqDetails.length = 0;
+            $.each($("#tblRequsitionDetailsData tbody tr"), function (index, item) {
+                var tds = $(this).children('td');
+                var iTypeId = tds.eq('1').html();
+                var iId = tds.eq('3').html();
+                var qty = tds.eq('5').html();
+                var rmk = tds.eq('7').html();
+                
+                reqDetails.push({
+                    ReqDetailId: 0,
+                    ItemTypeId: TryParseInt(iTypeId, 0),
+                    ItemId: TryParseInt(iId, 0),
+                    Quantity: TryParseInt(qty, 0),
+                    Remarks: rmk
+                })
+            })
+
+            var requsitionInfo = {
+                ReqInfoId: 0,
+                LineId: TryParseInt(ddlLineNumber.val(), 0),
+                WarehouseId: TryParseInt(ddlWarehouse.val(), 0),
+                ReqDetails: reqDetails
+            };
+
+            var data = JSON.stringify({ model: requsitionInfo });
+            console.log(data);
+
+            $.when(postReqWithToken(dataType.applicationJson, dataType.json, 'POST', '/Production/SaveRequsition', data, getToken())).then(function (res, status) {
+                console.log(res);
+                console.log(status);
+                enable("#btnSubmit");
+                if (res == true) {
+                    $('.toastrDefaultSuccess').trigger('click');
+                    alert(execuStatus.successSave);
+                    setTimeout(function () {
+                            redirectPage('@Url.Action("GetReqInfoList")');
+                        }, 1000);
+                }
+                else {
+                    $('.toastrDefaultError').trigger('click');
+                }
+            }).fail(function (error) {
+                consoleLog(error)
+            })
+        })
+
+        function redirectPage(page) {
+            window.location.replace(page);
+        }
+
+    </script>
+}

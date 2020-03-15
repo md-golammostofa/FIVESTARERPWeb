@@ -1,0 +1,94 @@
+﻿@model IEnumerable<ERPBO.Production.ViewModels.ProductionStockInfoViewModel>
+@{
+    ViewBag.Title = "Production Stock Info";
+}
+
+<div class="row">
+    <div class="col-md-12 text-center">
+        <h4><b style="color:darkblue">Production Stock Info</b></h4>
+        <hr />
+    </div>
+    <div class="col-md-12 mb-2">
+        @Html.AntiForgeryToken()
+        <div class="row">
+            <div class="col-md-3">
+                <label for="ddlWarehouse" class="control-label font-weight-bold">Warehouse Name</label>
+                @Html.DropDownList("ddlWarehouse", (IEnumerable<SelectListItem>)ViewBag.ddlWarehouse, "--Select Warehouse--", new { @class = "form-control form-control-sm" })
+            </div>
+            <div class="col-md-3">
+                <label for="ddlItemType" class="control-label font-weight-bold">Item Type Name</label>
+                <select id="ddlItemType" class="form-control form-control-sm">
+                    <option value="">--Select Item Type--</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlItem" class="control-label font-weight-bold">Item Name</label>
+                <select id="ddlItem" class="form-control form-control-sm">
+                    <option value="">--Select Item--</option>
+                </select>
+            </div>
+        </div>
+        <hr />
+    </div>
+    <div class="col-md-12" id="dataContainer">
+        @{Html.RenderAction("GetProductionStockInfoPartialList");}
+    </div>
+</div>
+
+@section scripts{
+    <script type="text/javascript">
+        var ddlWarehouse = $("#ddlWarehouse");
+        var ddlItemType = $("#ddlItemType");
+        var ddlItem = $("#ddlItem");
+        var txtInQuantity = $("#txtInQuantity");
+        var txtRemarks = $("#txtRemarks");
+        var unitName = $("#unitName");
+
+        $(document).ready(function () {
+
+        })
+
+        $(document).on('change', '.date-datePicker', function (e) {
+            var dateval = $(this).val();
+            console.log(dateval);
+        })
+
+        //casced dropdown load for itemtype
+        ddlWarehouse.change(function () {
+            $("#unitName").text('');
+            clearDropdown("ddlItemType");
+            clearDropdown("ddlItem");
+            if (ddlWarehouse.val() != "") {
+                LoadDropDown('/Common/GetItemTypeForDDL', 'POST', ddlItemType, JSON.stringify({ warehouseId: ddlWarehouse.val() }));
+            }
+            LoadDataTable();
+        })
+
+        //casced dropdown load for item
+        ddlItemType.change(function () {
+            $("#unitName").text('');
+            clearDropdown("ddlItem");
+            if (ddlItemType.val() != "") {
+                LoadDropDown('/Common/GetItemForDDL', 'POST', ddlItem, JSON.stringify({ itemTypeId: ddlItemType.val() }));
+            }
+            LoadDataTable();
+        })
+
+        ddlItem.change(function () {
+            LoadDataTable();
+        })
+
+        function LoadDataTable() {
+            var data = { WarehouseId: TryParseInt(ddlWarehouse.val(), 0), ItemTypeId: TryParseInt(ddlItemType.val(), 0), ItemId: TryParseInt(ddlItem.val(),0) };
+            $.when(getReqWithData('html', 'GET', '/Production/GetProductionStockInfoPartialList', data)).then(function (res,status) {
+                console.log(status);
+                if (status === "success") {
+                    $("#dataContainer").empty();
+                    $("#dataContainer").append(res);
+                }
+            }).fail(function (error) {
+                console.log(error);
+            })
+        }
+    </script>
+}

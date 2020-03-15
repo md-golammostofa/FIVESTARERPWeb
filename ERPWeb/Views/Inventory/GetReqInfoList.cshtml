@@ -1,0 +1,181 @@
+﻿@model IEnumerable<ERPBO.Production.ViewModels.RequsitionInfoViewModel>
+@{
+    ViewBag.Title = "Production Requsition List";
+}
+
+<div class="row">
+    <div class="col-md-12 text-center">
+        <h4><b style="color:darkblue">Production Requsition List</b></h4>
+        <hr />
+    </div>
+    <div class="col-md-12 mb-2">
+        @Html.AntiForgeryToken()
+        <div class="row">
+            <div class="col-md-3">
+                <label for="txtReqCode" class="control-label font-weight-bold">Requsition Code</label>
+                <input type="text" name="search" id="txtReqCode" class="form-control form-control-sm" placeholder="Search By Requsition Code" onkeyup="tableFilter('#tblReqInfoData tbody tr',this)" />
+            </div>
+            <div class="col-md-3">
+                <label for="ddlWarehouseName" class="control-label font-weight-bold">Warehouse Name</label>
+                @Html.DropDownList("ddlWarehouseName", (IEnumerable<SelectListItem>)ViewBag.ddlWarehouse, "--Select Warehouse--", new { @class = "form-control form-control-sm ctrl-changed" })
+                <span class="error hide required-warehouseName font-weight-bold">Required Warehouse Name!</span>
+            </div>
+            <div class="col-md-3">
+                <label for="ddlStateStatus" class="control-label font-weight-bold">StateStatus</label>
+                @Html.DropDownList("ddlStateStatus", (IEnumerable<SelectListItem>)ViewBag.ddlStateStatus, "--Select Status--", new { @class = "form-control form-control-sm ctrl-changed" })
+            </div>
+            <div class="col-md-3">
+                <label for="ddlLineNumber" class="control-label font-weight-bold">Line Number</label>
+                @Html.DropDownList("ddlLineNumber", (IEnumerable<SelectListItem>)ViewBag.ddlLineNumber, "--Select LineNumber--", new { @class = "form-control form-control-sm ctrl-changed" })
+                <span class="error hide required-lineNumber font-weight-bold">Required Line Number!</span>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3">
+                <label class="control-label font-weight-bold">From Date</label>
+                <input type="text" class="form-control form-control-sm date-datePicker ctrl-changed" id="dptFromDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="control-label font-weight-bold">To Date</label>
+                <input type="text" class="form-control form-control-sm date-datePicker ctrl-changed" id="dptToDate" />
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12" id="dataContainer1">
+        @{Html.RenderAction("GetReqInfoParitalList");}
+    </div>
+
+    <div class="modal fade" id="modalReqDetails" role="dialog" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header alert-primary">
+                    <input type="hidden" id="hdfReqInfoId" />
+                    <input type="hidden" id="hdfRowIndex" />
+                    <h4 id="modalHeading" class="modal-title">Requisition Item Details</h4>
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body" id="dataContainer">
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script type="text/javascript">
+
+        var txtReqCode = $("#txtReqCode");
+        var ddlWarehouseName = $("#ddlWarehouseName");
+        var ddlStateStatus = $("#ddlStateStatus");
+        var ddlLineNumber = $("#ddlLineNumber");
+        var dptFromDate = $("#dptFromDate");
+        var dptToDate = $("#dptToDate");
+        var hdfReqInfoId = $("#hdfReqInfoId");
+        var hdfRowIndex = $("#hdfRowIndex");
+
+        $(document).ready(function () {
+            dptFromDate.prop('readonly', true);
+            dptToDate.prop('readonly', true);
+            dptFromDate.css("background-color", "#fff");
+            dptToDate.css("background-color", "#fff");
+            $('#dptFromDate').datepicker({
+                format: "dd MM yyyy"
+            });
+            $('#dptToDate').datepicker({
+                format: "dd MM yyyy"
+            });
+        })
+
+        txtReqCode.keyup(function ()
+        {
+            LoadDataTable();
+        })
+
+        $(document).on('change', '.ctrl-changed', function () {
+            LoadDataTable();
+        })
+
+        function LoadDataTable()
+        {
+            var data = { reqCode: txtReqCode.val().trim(), warehouseId: TryParseInt(ddlWarehouseName.val(), 0), status: ddlStateStatus.val(), line: TryParseInt(ddlLineNumber.val(), 0), fromDate: dptFromDate.val(), toDate: dptToDate.val() };
+
+            $.when(getReqWithData('html', 'GET', '/Inventory/GetReqInfoParitalList', data)).then(function (res, status)
+            {
+                if (status == "success")
+                {
+                    $("#dataContainer1").empty();
+                    $("#dataContainer1").append(res);
+                }
+            }).fail(function (error) {
+                console.log(error);
+            })
+            console.log(data);
+        }
+
+        function OpenModal()
+        {
+            $("#dataContainer").empty();
+            hdfReqInfoId.val('0');
+            hdfRowIndex.val("");
+            $("#modalReqDetails").modal("show");
+        }
+        $(document).on("click", "a.data-details", function (e) {
+            e.preventDefault();
+            OpenModal();
+            var data = { reqId: TryParseInt($(this).attr("data-details"), 0) };
+            var idx = $(this).parent().parents('tr').index();
+
+            $.when(getReqWithData('html', 'GET', '/Inventory/GetRequsitionDetails', data)).then(function (res, status) {
+                if (status == "success") {
+                    OpenModal();
+                    hdfReqInfoId.val(data.reqId);
+                    hdfRowIndex.val(idx)
+                    $("#dataContainer").empty();
+                    $("#dataContainer").append(res);
+                }
+            }).fail(function (error) {
+                console.log(error);
+            })
+        })
+
+        $(document).on('click',".btnDecline", function(e) {
+            e.preventDefault();
+            fnRequisitionStateChange(hdfReqInfoId.val(), hdfRowIndex.val(), reqStatus.decline);
+        })
+
+        $(document).on('click', ".btnRecheck", function (e) {
+            e.preventDefault();
+            fnRequisitionStateChange(hdfReqInfoId.val(), hdfRowIndex.val(), reqStatus.recheck);
+        })
+
+        $(document).on('click', ".btnApproved", function (e) {
+            e.preventDefault();
+            fnRequisitionStateChange(hdfReqInfoId.val(), hdfRowIndex.val(), reqStatus.approved);
+        })
+
+        function fnRequisitionStateChange(id, index, status) {
+            if (id > 0) {
+                var data = JSON.stringify({ reqId: id, status: status });
+                $.when(postReqWithToken(dataType.applicationJson, dataType.json, 'POST', '/Inventory/SaveRequisitionStatus', data, getToken())).then(function (res, status)
+                {
+                    if (status == "success" && res === true) {
+                        $("#modalReqDetails").modal("toggle").toggle("fast");
+                        hdfReqInfoId.val('0');
+                        hdfRowIndex.val("");
+                        alert("Requisition State has been changed successfully");
+                        removeTableRow("#tblReqInfoData tbody", index);
+                        $('.toastrDefaultSuccess').trigger('click');
+                        setTimeout(function () {
+                            LoadDataTable();
+                        }, 1500);
+                    }
+                }).fail(function (error) {
+                    console.log(error);
+                })
+            }
+        }
+
+    </script>
+}

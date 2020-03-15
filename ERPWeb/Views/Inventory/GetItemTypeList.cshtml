@@ -1,0 +1,239 @@
+﻿@model IEnumerable<ERPBO.Inventory.ViewModels.ItemTypeViewModel>
+@{
+    ViewBag.Title = "GetItemTypeList";
+    int sl = 0;
+    string badge = string.Empty;
+}
+<div class="row">
+    <div class="col-md-12 text-center">
+        <h4><b style="color:darkblue">List Of ItemTypes</b></h4>
+        <hr />
+    </div>
+    <div class="col-md-12 mb-2">
+        @Html.AntiForgeryToken()
+        <div class="row">
+            <div class="col-md-4">
+                <input type="text" name="search" id="searchBy" class="form-control form-control-sm" placeholder="Search By Anything" onkeyup="tableFilter('#tblItemTypeData tbody tr',this)" />
+            </div>
+            <div class="col-md-4"></div>
+            <div class="col-md-4">
+                <button class="btn btn-primary btn-sm float-lg-right" style="background-color:darkblue" id="btnAddNew"><i class="fa fa-plus"></i> Add New ItemType</button>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-12">
+        <table class="table table-bordered table-sm table-striped table-responsive-lg" id="tblItemTypeData">
+            <thead class="btn-dark">
+                <tr class="text-center">
+                    <th>SL No.</th>
+                    <th class="hide"></th>
+                    <th class="hide"></th>
+                    <th>WarehouseName</th>
+                    <th>ItemTypeName</th>
+                    <th>Remarks</th>
+                    <th>StateStatus</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    sl = sl + 1;
+                    badge = item.StateStatus.ToLower() == "active" ? "badge bg-success" : "badge bg-danger";
+                <tr>
+                    <td class="text-center" width="10%">@sl</td>
+                    <td class="hide">@item.ItemId</td>
+                    <td class="hide">@item.WarehouseId</td>
+                    <td>@item.WarehouseName</td>
+                    <td>@item.ItemName</td>
+                    <td>@item.Remarks</td>
+                    <td class="text-center" data-val="@item.StateStatus">
+                        <span class="@badge">@item.StateStatus</span>
+                    </td>
+                    <td class="text-center">
+                        <a href="#" class="btn btn-warning btn-sm data-edit-item" data-edit-item="@item.ItemId"><i class="fa fa-pen"></i> Edit</a>
+                    </td>
+                </tr>
+                }
+                @if (Model.Count() == 0)
+                {
+                    <tr class="text-center empty-row">
+                        <td colspan="5">
+                            No Rows Found
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+<div class="modal fade" id="modalItemType" role="dialog" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header alert-primary">
+                <h4 id="modalHeading" class="modal-title">Add New ItemType</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <form id="frmItemType">
+                    <input type="hidden" name="Id" id="hdfItemTypeId" />
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="ddlWarehouseName" class="control-label font-weight-bold">Warehouse Name</label>
+                            @Html.DropDownList("ddlWarehouseName", (IEnumerable<SelectListItem>)ViewBag.ddlWarehouse,"--Select Warehouse--",new {@class= "form-control form-control-sm" })
+                            <span class="error hide required-warehouseName font-weight-bold">Required Warehouse Name!</span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="txtitemTypeName" class="control-label font-weight-bold">ItemTypeName</label>
+                            <input type="text" name="txtitemTypeName" value="" id="txtitemTypeName" class="form-control form-control-sm" />
+                            <span class="error hide required-itemTypeName font-weight-bold">Input ItemType Name!</span>
+                            <span class="error hide duplicate-itemTypeName font-weight-bold">Already ItemType Exist!</span>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <label for="txtRemarks" class="control-label font-weight-bold">Remarks</label>
+                            <input type="text" name="remarks" value="" id="txtRemarks" class="form-control form-control-sm" />
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-12">
+                            <div class="form-control">
+                                <input type="checkbox" id="chkStatestatus" /> <b>Is Active?</b>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer btn-light">
+                <div class="col-md-6">
+                    <div id="msg1" class="alert alert-success hide float-left">
+                        Data has been saved Successful!
+                    </div>
+                    <div id="msg2" class="alert alert-danger hide float-left">
+                        Data has been failed to save!
+                    </div>
+                </div>
+                <button type="button" class="btn btn-danger float-right" data-dismiss="modal" data-target="#"><i class="fas fa-times"></i> Cancel </button>
+                <button type="submit" class="btn btn-success float-right" id="btnSubmit"><i class="far fa-save"></i> Save </button>
+            </div>
+        </div>
+    </div>
+</div>
+@section scripts{
+    <script type="text/javascript">
+        var hdfItemTypeId = $("#hdfItemTypeId");
+        var ddlWarehouseName = $("#ddlWarehouseName");
+        var txtitemTypeName = $("#txtitemTypeName");
+        var txtRemarks = $("#txtRemarks");
+        var chkStatestatus = $("#chkStatestatus");
+
+
+        $(document).ready(function () {
+            $('#tblItemTypeData').DataTable({
+                "paging": false,
+                "lengthChange": false,
+                "searching": false,
+                "ordering": true,
+                "info": false,
+                "autoWidth": false,
+            });
+        })
+
+        function OpenModal() {
+            $("#modalItemType").modal("show");
+            $(".error").addClass("hide");
+        }
+
+        $("#btnAddNew").click(function (e) {
+            e.preventDefault();
+            clearCtrl();
+            OpenModal();
+        })
+
+
+        function validateForm() {
+            $(".error").addClass("hide");
+            var isValid = true;
+            if ($.trim(ddlWarehouseName.val()) == "") {
+                $(".required-warehouseName").removeClass("hide");
+                isValid = false;
+            }
+            else {
+                var id = TryParseInt(hdfItemTypeId.val(), 0);
+                if (ajaxBooleanChecker(JSON.stringify({ id: id, itemTypeName: txtitemTypeName.val().trim(), warehouseId: TryParseInt(ddlWarehouseName.val(),0) }), '/Common/IsDuplicateItemTypeName', getToken()) == true) {
+                    $(".duplicate-itemTypeName").removeClass("hide");
+                    isValid = false;
+                }
+            }
+            if ($.trim(txtitemTypeName.val()) == "") {
+                $(".required-itemTypeName").removeClass("hide");
+                isValid = false;
+            }
+            return isValid;
+        }
+
+
+        $("#btnSubmit").click(function (e) {
+            e.preventDefault();
+            $(".error").addClass("hide");
+            if (validateForm() == true) {
+                var data = JSON.stringify({ ItemId: TryParseInt(hdfItemTypeId.val(), 0), WarehouseId: ddlWarehouseName.val(), ItemName: txtitemTypeName.val(), Remarks: txtRemarks.val(), IsActive: chkStatestatus.is(":checked") });
+                console.log(data);
+                $.when(postReqWithToken(dataType.applicationJson, dataType.json, 'POST', '/Inventory/SaveItemType', data, getToken())).then(function (res, status) {
+                    console.log(status);
+                    console.log(res);
+                    if (res == true) {
+                        message("#msg1", "#modalItemType");
+                    }
+                    else {
+                        message("#msg2");
+                    }
+                    enable("#btnSubmit");
+                }).fail(function (err) {
+                    console.log(err);
+                    enable("#btnSubmit");
+                });
+            }
+
+        })
+
+        $(".data-edit-item").click(function (e) {
+            e.preventDefault()
+            OpenModal()
+        });
+
+        $(document).on("click", "a.data-edit-item", function (e) {
+            e.preventDefault()
+            clearCtrl();
+            var row = $(this).parent().parents('tr');
+            var td1 = row.find('td:eq(1)').html();
+            var td2 = row.find('td:eq(2)').html();
+            var td3 = row.find('td:eq(4)').html();
+            var td4 = row.find('td:eq(5)').html();
+            var td5 = row.find('td:eq(6)').attr("data-val");
+
+            hdfItemTypeId.val(td1);
+            ddlWarehouseName.val(td2);
+            txtitemTypeName.val(td3);
+            txtRemarks.val(td4);
+            chkStatestatus.prop("checked", false);
+            if (td5.toLowerCase() === 'active') {
+                chkStatestatus.prop("checked", true);
+            }
+        })
+
+        function clearCtrl() {
+            hdfItemTypeId.val('0');
+            ddlWarehouseName.val('');
+            txtitemTypeName.val('');
+            txtRemarks.val('');
+            chkStatestatus.prop("checked", false);
+        }
+    </script>
+    }
+
